@@ -1,7 +1,7 @@
-import { createSignal } from 'solid-js';
 import type { JSX } from 'solid-js';
-import fr from '../../../../../locales/fr.json';
+import { createSignal, onMount } from 'solid-js';
 import en from '../../../../../locales/en.json';
+import fr from '../../../../../locales/fr.json';
 import { LanguageSwitcher } from '../language-switcher/language-switcher';
 
 interface Translation {
@@ -24,10 +24,22 @@ function detectLocale(): 'fr' | 'en' {
   return 'fr';
 }
 
+const translations: Record<'fr' | 'en', Translation> = { fr, en };
+
 export function Homepage(): JSX.Element {
-  const [lang, setLang] = createSignal<'fr' | 'en'>(detectLocale());
-  const translations: Record<'fr' | 'en', Translation> = { fr, en };
-  const t = () => translations[lang()] ?? translations['fr'];
+  const [lang, setLang] = createSignal<'fr' | 'en'>('fr');
+  const translation = () => translations[lang()] ?? translations['fr'];
+
+  onMount(() => {
+    const applyLang = () => {
+      const newLang = detectLocale();
+      console.log('Applying language:', newLang);
+      setLang(newLang);
+    };
+    applyLang();
+  });
+
+  console.log('@@ language: ', translation().description);
 
   return (
     <div class="flex flex-col items-center justify-center min-h-screen gap-10 p-8 bg-gradient-to-br from-yellow-100 to-white text-gray-800">
@@ -41,17 +53,17 @@ export function Homepage(): JSX.Element {
         aria-hidden="false"
       />
       <div class="fixed top-4 right-4 z-50">
-        <LanguageSwitcher lang={lang()} t={t()} onChange={setLang} />
+      <LanguageSwitcher language={lang()} translation={translation()} onChange={setLang} />
       </div>
-      <h1 class="text-5xl text-center tracking-tight leading-tight font-grotesk font-bold">{t().title}</h1>
-      <p class="text-xl text-center max-w-2xl text-gray-700">{t().description}</p>
+      <h1 class="text-5xl text-center tracking-tight leading-tight font-grotesk font-bold">{translation().title}</h1>
+      <p class="text-xl text-center max-w-2xl text-gray-700">{translation().description}</p>
       <a
         href="https://www.meetup.com/biere-code-beer-paris/"
         class="inline-block bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-8 py-4 rounded-full shadow-lg transition-all transform hover:scale-105"
         target="_blank"
         rel="noopener noreferrer"
       >
-        {t().meetupLink}
+        {translation().meetupLink}
       </a>
     </div>
   );
