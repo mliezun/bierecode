@@ -13,6 +13,8 @@ interface Translation {
   english: string;
 }
 
+import '/src/components/pages/homepage/components/homepage/logo-wiggle.css';
+
 export function Homepage(): JSX.Element {
   const [lang, setLang] = createSignal<'fr' | 'en'>('fr');
   const translations: Record<'fr' | 'en', Translation> = { fr, en };
@@ -20,7 +22,16 @@ export function Homepage(): JSX.Element {
 
   return (
     <div class="flex flex-col items-center justify-center min-h-screen gap-10 p-8 bg-gradient-to-br from-yellow-100 to-white text-gray-800">
-      <div class="self-end">
+      <img
+        src="/logo.svg"
+        alt="Bière Code Logo"
+        class="logo-wiggle mb-4"
+        width={120}
+        height={120}
+        loading="eager"
+        aria-hidden="false"
+      />
+      <div class="fixed top-4 right-4 z-50">
         <LanguageSwitcher lang={lang()} t={t()} onChange={setLang} />
       </div>
       <h1 class="text-5xl text-center tracking-tight leading-tight font-grotesk font-bold">{t().title}</h1>

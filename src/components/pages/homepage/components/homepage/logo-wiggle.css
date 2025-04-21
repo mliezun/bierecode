@@ -1,0 +1,24 @@
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-2deg); }
+  20% { transform: rotate(2deg); }
+  40% { transform: rotate(-1.5deg); }
+  60% { transform: rotate(1.5deg); }
+  80% { transform: rotate(-1deg); }
+}
+
+.logo-wiggle {
+  animation: wiggle 2.4s infinite ease-in-out;
+  display: block;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 400px;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .logo-wiggle {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
