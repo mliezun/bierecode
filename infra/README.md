@@ -7,4 +7,6 @@ any manual steps.
 The workflow expects these secrets:
 - `CLOUDFLARE_API_TOKEN` – API token with access to manage KV and Pages
 - `CLOUDFLARE_ACCOUNT_ID` – your Cloudflare account identifier
+
 The configuration checks for an existing namespace titled `bierecode-updates`. If it already exists, Terraform simply outputs its ID instead of attempting to create a new one.
+
