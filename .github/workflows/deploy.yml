@@ -51,7 +51,10 @@ jobs:
 
       - name: Capture KV namespace ID
         working-directory: infra
-        run: echo "KV_ID=$(terraform output -raw kv_namespace_id)" >> $GITHUB_ENV
+        shell: bash
+        run: |
+          KV=$(terraform output -raw kv_namespace_id | tail -n 1)
+          echo "KV_ID=$KV" >> "$GITHUB_ENV"
 
       - name: Inject KV namespace ID into wrangler.toml
         run: |
