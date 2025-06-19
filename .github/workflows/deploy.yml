@@ -42,6 +42,10 @@ jobs:
         working-directory: infra
         run: terraform init
 
+      - name: Terraform fmt check
+        working-directory: infra
+        run: terraform fmt -check
+
       - name: Terraform apply
         working-directory: infra
         env:
