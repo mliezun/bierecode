@@ -71,3 +71,4 @@ The Terraform state file is stored in the same KV namespace between deployments.
 The workflow runs whenever you push to `main` or update a pull request targeting `main` so you can preview infrastructure changes before merging.
 On each run the workflow downloads this file before `terraform init`. If the file is missing but the namespace already exists, the workflow imports that namespace into the new state so `terraform apply` can proceed. After the run the updated state file is uploaded back to KV.
 The import step uses the format `<account_id>/<namespace_id>` required by the Cloudflare provider.
+If the Cloudflare Pages project `bierecode-site` does not exist, the workflow creates it automatically before deploying.
