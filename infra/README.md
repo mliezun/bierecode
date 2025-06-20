@@ -17,8 +17,9 @@ The workflow saves the Terraform state file to Workers KV so Terraform knows the
 
 The workflow does not rely on a remote backend. Instead, the Terraform state
 file `terraform.tfstate` is uploaded to the `bierecode-updates` KV namespace at
-the end of each deployment and downloaded at the start. If the file is missing,
-Terraform initializes a new state and the resulting file is stored after the
-run. This approach keeps state between GitHub Action runs without introducing
-another storage service.
+the end of each deployment and downloaded at the start. If the file is missing
+but the namespace already exists, the workflow imports that namespace into the
+fresh state before running `terraform apply`. The resulting state file is then
+stored back in KV. This approach keeps state between GitHub Action runs without
+introducing another storage service.
 

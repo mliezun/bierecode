@@ -14,8 +14,9 @@
 # `bierecode-updates` KV namespace after each deployment. At the start of a
 # run the workflow attempts to download this file so Terraform knows about
 # previously created resources. If no state file exists yet Terraform simply
-# begins with an empty state and the new file is uploaded when the run
-# completes.
+# begins with an empty state. The workflow automatically imports the existing
+# namespace into state so Terraform can manage it and then uploads the new
+# state file when the run completes.
 
 terraform {
   required_providers {

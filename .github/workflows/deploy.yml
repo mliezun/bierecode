@@ -62,8 +62,10 @@ jobs:
               "$CF_API/accounts/$CF_ACCOUNT_ID/storage/kv/namespaces/$NS/values/terraform.tfstate" \
               -o infra/terraform.tfstate; then
               echo "Existing Terraform state downloaded."
+              echo "STATE_FOUND=true" >> "$GITHUB_ENV"
             else
               echo "No existing Terraform state found. Starting fresh."
+              echo "STATE_FOUND=false" >> "$GITHUB_ENV"
             fi
             echo "TF_STATE_NAMESPACE_ID=$NS" >> "$GITHUB_ENV"
           fi
@@ -71,6 +73,14 @@ jobs:
       - name: Terraform init
         working-directory: infra
         run: terraform init
+
+      - name: Import existing namespace when state is missing
+        if: env.STATE_FOUND == 'false' && env.TF_STATE_NAMESPACE_ID != ''
+        working-directory: infra
+        env:
+          TF_VAR_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TF_VAR_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: terraform import cloudflare_workers_kv_namespace.updates "$TF_STATE_NAMESPACE_ID"
 
       - name: Terraform fmt check
         working-directory: infra
