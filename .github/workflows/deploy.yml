@@ -7,6 +7,10 @@
 # 4. Inject the KV namespace ID into wrangler.toml
 # 5. Deploy the built site and functions to Cloudflare Pages
 #
+# The workflow runs on pushes to `main` and also whenever a pull request
+# targeting `main` is updated. This allows previewing infrastructure and
+# site changes before merging.
+#
 # Required repository secrets:
 #   CLOUDFLARE_API_TOKEN - API token with Pages and KV permissions
 #   CLOUDFLARE_ACCOUNT_ID - Cloudflare account ID
@@ -14,6 +18,8 @@ name: Deploy to Cloudflare
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
 
 jobs:
