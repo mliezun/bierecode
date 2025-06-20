@@ -100,7 +100,11 @@ jobs:
         working-directory: infra
         shell: bash
         run: |
-          KV=$(terraform output -raw kv_namespace_id | tail -n 1)
+          set -e
+          # `terraform output` prints the namespace ID stored in the state file.
+          # Using jq avoids any potential formatting issues and ensures we get
+          # the raw value without extra whitespace.
+          KV=$(jq -r '.outputs.kv_namespace_id.value' terraform.tfstate)
           echo "KV_ID=$KV" >> "$GITHUB_ENV"
           echo "TF_STATE_NAMESPACE_ID=$KV" >> "$GITHUB_ENV"
 
@@ -127,12 +131,15 @@ jobs:
         run: npx wrangler pages deploy ./dist --project-name bierecode-site --branch main
 
       - name: Upload Terraform state to KV
-        if: env.TF_STATE_NAMESPACE_ID != ''
+        if: env.TF_STATE_NAMESPACE_ID != '' && hashFiles('infra/terraform.tfstate') != ''
+        shell: bash
         env:
           CF_API: https://api.cloudflare.com/client/v4
           CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
+          set -e
+          # Persist the state file in Workers KV so the next run can download it.
           curl -s -X PUT \
             "$CF_API/accounts/$CF_ACCOUNT_ID/storage/kv/namespaces/$TF_STATE_NAMESPACE_ID/values/terraform.tfstate" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
