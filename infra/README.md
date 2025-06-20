@@ -11,7 +11,7 @@ The workflow expects these secrets:
   API.
 - `CLOUDFLARE_ACCOUNT_ID` – your Cloudflare account identifier
 
-The configuration checks for an existing namespace titled `bierecode-updates`. If it already exists, Terraform simply outputs its ID instead of attempting to create a new one.
+The workflow saves the Terraform state file to Workers KV so Terraform knows the namespace ID across runs. There is no additional backend configuration required.
 
 ## Terraform State
 

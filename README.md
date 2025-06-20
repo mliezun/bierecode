@@ -67,5 +67,5 @@ The `/api/updates` endpoint uses HTTP Basic authentication. Set `ADMIN_USERNAME`
 The repository includes a GitHub Actions workflow that builds the site, provisions the KV namespace with Terraform, and deploys everything to Cloudflare Pages. Configure these repository secrets:
 - `CLOUDFLARE_API_TOKEN` – API token with permissions for Pages and Workers KV
 - `CLOUDFLARE_ACCOUNT_ID` – your Cloudflare account ID
-The Terraform module detects whether the namespace already exists and will reuse it on subsequent deployments. This prevents failures when redeploying the workflow.
+The Terraform state file is stored in the same KV namespace between deployments. This allows Terraform to remember the namespace ID without relying on an additional backend.
 The workflow also saves the Terraform state file to the same KV namespace. On each run it attempts to download this file before `terraform init`. If no state is available, Terraform starts with an empty state and the file is uploaded afterwards.
