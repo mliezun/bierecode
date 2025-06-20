@@ -7,6 +7,10 @@
 # 4. Inject the KV namespace ID into wrangler.toml
 # 5. Deploy the built site and functions to Cloudflare Pages
 #
+# The workflow runs on pushes to `main` and also whenever a pull request
+# targeting `main` is updated. This allows previewing infrastructure and
+# site changes before merging.
+#
 # Required repository secrets:
 #   CLOUDFLARE_API_TOKEN - API token with Pages and KV permissions
 #   CLOUDFLARE_ACCOUNT_ID - Cloudflare account ID
@@ -14,6 +18,8 @@ name: Deploy to Cloudflare
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
 
 jobs:
@@ -38,9 +44,46 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
+      - name: Load Terraform state from KV
+        shell: bash
+        env:
+          CF_API: https://api.cloudflare.com/client/v4
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -e
+          NS=$(curl -sf \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "$CF_API/accounts/$CF_ACCOUNT_ID/storage/kv/namespaces?per_page=100" \
+            | jq -r '.result[] | select(.title=="bierecode-updates") | .id')
+          if [ -n "$NS" ]; then
+            if curl -sf \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              "$CF_API/accounts/$CF_ACCOUNT_ID/storage/kv/namespaces/$NS/values/terraform.tfstate" \
+              -o infra/terraform.tfstate; then
+              echo "Existing Terraform state downloaded."
+              echo "STATE_FOUND=true" >> "$GITHUB_ENV"
+            else
+              echo "No existing Terraform state found. Starting fresh."
+              echo "STATE_FOUND=false" >> "$GITHUB_ENV"
+            fi
+            echo "TF_STATE_NAMESPACE_ID=$NS" >> "$GITHUB_ENV"
+          fi
+
       - name: Terraform init
         working-directory: infra
         run: terraform init
+
+      - name: Import existing namespace when state is missing
+        if: env.STATE_FOUND == 'false' && env.TF_STATE_NAMESPACE_ID != ''
+        working-directory: infra
+        env:
+          TF_VAR_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TF_VAR_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # Terraform requires the ID in the form "accountID/namespaceID" when importing
+        # resources. We combine the account ID with the detected namespace ID to
+        # bring the existing namespace under Terraform management.
+        run: terraform import cloudflare_workers_kv_namespace.updates "$TF_VAR_account_id/$TF_STATE_NAMESPACE_ID"
 
       - name: Terraform fmt check
         working-directory: infra
@@ -57,16 +100,74 @@ jobs:
         working-directory: infra
         shell: bash
         run: |
-          KV=$(terraform output -raw kv_namespace_id | tail -n 1)
+          set -e
+          # `terraform output` prints the namespace ID stored in the state file.
+          # Using jq avoids any potential formatting issues and ensures we get
+          # the raw value without extra whitespace.
+          KV=$(jq -r '.outputs.kv_namespace_id.value' terraform.tfstate)
           echo "KV_ID=$KV" >> "$GITHUB_ENV"
+          echo "TF_STATE_NAMESPACE_ID=$KV" >> "$GITHUB_ENV"
 
       - name: Inject KV namespace ID into wrangler.toml
         run: |
           sed -i "s/id = \".*\"/id = \"$KV_ID\"/" wrangler.toml
           sed -i "s/preview_id = \".*\"/preview_id = \"$KV_ID\"/" wrangler.toml
 
+      - name: Ensure Cloudflare Pages project exists
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -e
+          PROJECT="bierecode-site"
+          if ! npx wrangler pages project list | grep -q "$PROJECT"; then
+            npx wrangler pages project create "$PROJECT" --production-branch main
+          fi
+
+      - name: Ensure custom domains exist
+        env:
+          CF_API: https://api.cloudflare.com/client/v4
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -e
+          PROJECT="bierecode-site"
+          DOMAINS="www.bierecode.com bierecode.com"
+          # Query currently configured domains via the Cloudflare API. The
+          # response contains a list of objects with a `name` field. We filter
+          # this list with `jq` to get a simple newline-separated list.
+          EXISTING=$(curl -sf \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "$CF_API/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJECT/domains" \
+            | jq -r '.result[]?.name')
+
+          for D in $DOMAINS; do
+            if ! echo "$EXISTING" | grep -q "^$D$"; then
+              curl -sf -X POST \
+                -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                -H "Content-Type: application/json" \
+                "$CF_API/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJECT/domains" \
+                --data "{\"name\":\"$D\"}"
+            fi
+          done
+
       - name: Deploy to Cloudflare Pages
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npx wrangler pages deploy ./dist --project-name bierecode-site --branch main
+
+      - name: Upload Terraform state to KV
+        if: env.TF_STATE_NAMESPACE_ID != '' && hashFiles('infra/terraform.tfstate') != ''
+        shell: bash
+        env:
+          CF_API: https://api.cloudflare.com/client/v4
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -e
+          # Persist the state file in Workers KV so the next run can download it.
+          curl -s -X PUT \
+            "$CF_API/accounts/$CF_ACCOUNT_ID/storage/kv/namespaces/$TF_STATE_NAMESPACE_ID/values/terraform.tfstate" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            --data-binary "@infra/terraform.tfstate"
