@@ -17,10 +17,15 @@ terraform {
 }
 
 provider "cloudflare" {
+  # The provider requires an API token for authentication so it can create
+  # or query resources in your Cloudflare account. Terraform itself does not
+  # store state in Cloudflare; the token simply authorizes API requests.
   api_token = var.api_token
 }
 
 variable "api_token" {
+  # The token must have permission to manage Workers KV. It is provided by the
+  # workflow through the `CLOUDFLARE_API_TOKEN` secret.
   description = "Cloudflare API token with permissions for KV"
   type        = string
   sensitive   = true
