@@ -80,3 +80,10 @@ The site uses custom domains `www.bierecode.com` and `bierecode.com`.
 A Cloudflare Pages middleware in `functions/_middleware.ts` redirects
 all requests for `bierecode.com` to the `www` subdomain to keep a
 single canonical hostname.
+
+## Cloudflare Pages Functions
+The `functions/` directory is deployed as [Pages Functions](https://developers.cloudflare.com/pages/functions/). Any file inside this directory becomes an endpoint matching its path. For example, `functions/api/demo-days/index.ts` is served at `/api/demo-days`.
+
+During development run `wrangler pages dev ./dist` after building to test these functions locally. When deploying through GitHub Actions the same directory is automatically compiled and uploaded to Cloudflare.
+
+Terraform provisions the Pages project and attaches the `UPDATES_KV` namespace automatically. No manual configuration is required.
