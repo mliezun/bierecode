@@ -59,21 +59,23 @@ resource "cloudflare_pages_project" "site" {
 
   deployment_configs {
     preview {
-      kv_namespaces = [
-        {
-          binding = "UPDATES_KV"
-          id      = cloudflare_workers_kv_namespace.updates.id
-        }
-      ]
+      # Each environment accepts a map where the key is the binding name used
+      # within functions and the value is the ID of the Workers KV namespace.
+      # Earlier versions of the provider used a list of objects here which is
+      # why this configuration may fail if not updated. The workflow supplies
+      # the namespace ID at runtime, so we simply reference the resource above.
+      kv_namespaces = {
+        "UPDATES_KV" = cloudflare_workers_kv_namespace.updates.id
+      }
     }
 
     production {
-      kv_namespaces = [
-        {
-          binding = "UPDATES_KV"
-          id      = cloudflare_workers_kv_namespace.updates.id
-        }
-      ]
+      # The production configuration mirrors the preview environment. A map of
+      # bindings ensures Terraform passes the correct type expected by the
+      # Cloudflare provider.
+      kv_namespaces = {
+        "UPDATES_KV" = cloudflare_workers_kv_namespace.updates.id
+      }
     }
   }
 }
