@@ -65,8 +65,16 @@ function parseBasicAuth(authHeader: string | null): [string, string] | null {
   }
 }
 
-/** Simple constant-time comparison */
-function safeEqual(a: string, b: string): boolean {
+/**
+ * Compare two strings in constant time.
+ *
+ * Cloudflare does not populate undefined environment variables, so
+ * authentication may pass `undefined` values when credentials are
+ * missing. To avoid runtime exceptions we treat any non-string input
+ * as an automatic mismatch.
+ */
+function safeEqual(a: string | undefined, b: string | undefined): boolean {
+  if (typeof a !== "string" || typeof b !== "string") return false;
   const len = Math.max(a.length, b.length);
   const viewA = a.padEnd(len);
   const viewB = b.padEnd(len);
