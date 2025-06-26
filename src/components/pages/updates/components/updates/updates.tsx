@@ -1,10 +1,15 @@
 /**
- * Client-side component used on the updates page.
+ * Client-side updates list used on the `/updates` page.
  *
- * Fetches update entries from the `/api/updates` endpoint and renders
- * them in a basic list.
+ * This Solid component fetches a JSON array from the `/api/updates` API route
+ * and displays each entry. The component runs in the browser so that builds
+ * remain fully static – no data needs to be fetched during the Astro build
+ * step. Cloudflare's worker runtime throws an error when `fetch` is given a
+ * relative URL server-side, so fetching is deferred until the component mounts
+ * in the client. The initial HTML rendered by Astro therefore contains only a
+ * loading message which is replaced once the client finishes fetching data.
  */
-import { createResource, Show, For } from 'solid-js';
+import { createSignal, Show, For, onMount } from 'solid-js';
 import type { JSX } from 'solid-js';
 
 interface Update {
@@ -19,9 +24,16 @@ interface Update {
 }
 
 /**
- * Fetch updates from the API with optional query parameters.
+ * Fetch updates from the API. This helper only runs in the browser because
+ * Cloudflare's server runtime does not support relative URLs with `fetch`.
  */
 async function fetchUpdates(): Promise<Update[]> {
+  // The API lives in a Pages Function. Requests use a relative path so they
+  // automatically resolve against the same domain the site is served from.
+  // Browsers handle this just fine, but the Cloudflare workers runtime will
+  // throw `TypeError: Failed to parse URL` during server-side rendering if we
+  // attempt to call `fetch` with a relative path. By only calling this helper
+  // after the component mounts we ensure it never runs in that environment.
   const res = await fetch('/api/updates');
   if (!res.ok) throw new Error('Failed to fetch');
   return res.json();
@@ -29,13 +41,28 @@ async function fetchUpdates(): Promise<Update[]> {
 
 /** Component showing a list of updates */
 export function Updates(): JSX.Element {
-  const [updates] = createResource(fetchUpdates);
+  const [updates, setUpdates] = createSignal<Update[] | null>(null);
 
+  // Load updates after the component mounts in the browser.
+  onMount(async () => {
+    // Since this code runs only in the browser, `fetch` can safely use the
+    // relative `/api/updates` URL. Any network or parsing errors are logged
+    // but not rethrown so the page continues to render.
+    try {
+      setUpdates(await fetchUpdates());
+    } catch (err) {
+      console.error('Failed to load updates', err);
+    }
+  });
+
+  // Once updates are loaded, render them in a simple list. During the initial
+  // render the list shows a small loading message which is replaced as soon as
+  // `updates()` resolves to an array.
   return (
     <div class="p-8 space-y-6">
       <h1 class="text-3xl font-bold">Community Updates</h1>
       <Show when={updates()} fallback={<p>Loading...</p>}>
-        <For each={updates()}>
+        <For each={updates() ?? []}>
           {(item) => (
             <article class="border-b pb-4 mb-4">
               <h2 class="text-xl font-semibold">{item.title}</h2>
