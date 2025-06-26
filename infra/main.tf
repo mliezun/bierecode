@@ -16,7 +16,9 @@
 # previously created resources. If no state file exists yet Terraform simply
 # begins with an empty state. The workflow automatically imports the existing
 # namespace into state so Terraform can manage it and then uploads the new
-# state file when the run completes.
+# state file when the run completes. The same import logic is used for the
+# Cloudflare Pages project so that Terraform does not attempt to recreate an
+# already provisioned site.
 
 terraform {
   required_providers {
