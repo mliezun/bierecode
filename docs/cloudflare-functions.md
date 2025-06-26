@@ -6,10 +6,14 @@ Use `wrangler pages dev ./dist` to run the built site locally with these functio
 
 Terraform configures the Pages project and attaches the `UPDATES_KV` namespace automatically. Deployments reference this binding without any manual setup.
 
-## Environment Variables
+## Runtime Bindings
 
-Pages Functions read credentials such as `ADMIN_USERNAME` and
-`ADMIN_PASSWORD` from environment variables. Define these in your
-Cloudflare Pages project settings. When running locally with
-`wrangler pages dev` they come from `wrangler.toml` under the `[vars]`
-section.
+Pages Functions rely on two bindings that are configured automatically
+by Terraform:
+
+- `UPDATES_KV` – Workers KV namespace storing community updates.
+- `DB` – Cloudflare D1 database powering Better Auth.
+
+When running locally with `wrangler pages dev` these bindings are
+defined in `wrangler.toml` so the functions behave the same as in
+production.

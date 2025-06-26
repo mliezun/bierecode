@@ -100,6 +100,25 @@ jobs:
             terraform import cloudflare_pages_project.site "$TF_VAR_account_id/bierecode-site"
           fi
 
+      - name: Import existing D1 database when missing
+        working-directory: infra
+        env:
+          TF_VAR_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TF_VAR_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_API: https://api.cloudflare.com/client/v4
+        run: |
+          set -e
+          # Import the Cloudflare D1 database if not already managed in state.
+          if ! terraform state list cloudflare_d1_database.auth >/dev/null 2>&1; then
+            DB_ID=$(curl -sf \
+              -H "Authorization: Bearer $TF_VAR_api_token" \
+              "$CF_API/accounts/$TF_VAR_account_id/d1/database?name=bierecode-auth" \
+              | jq -r '.result[0].uuid // empty')
+            if [ -n "$DB_ID" ]; then
+              terraform import cloudflare_d1_database.auth "$TF_VAR_account_id/$DB_ID"
+            fi
+          fi
+
       - name: Terraform fmt check
         working-directory: infra
         run: terraform fmt -check
@@ -122,6 +141,22 @@ jobs:
           KV=$(jq -r '.outputs.kv_namespace_id.value' terraform.tfstate)
           echo "KV_ID=$KV" >> "$GITHUB_ENV"
           echo "TF_STATE_NAMESPACE_ID=$KV" >> "$GITHUB_ENV"
+
+      - name: Upload Terraform state to KV
+        if: env.TF_STATE_NAMESPACE_ID != '' && hashFiles('infra/terraform.tfstate') != ''
+        shell: bash
+        env:
+          CF_API: https://api.cloudflare.com/client/v4
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -e
+          # Persist the state file in Workers KV immediately after apply so later steps
+          # do not leave the state stale if they fail.
+          curl -s -X PUT \
+            "$CF_API/accounts/$CF_ACCOUNT_ID/storage/kv/namespaces/$TF_STATE_NAMESPACE_ID/values/terraform.tfstate" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            --data-binary "@infra/terraform.tfstate"
 
       - name: Inject KV namespace ID into wrangler.toml
         run: |
@@ -172,17 +207,3 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npx wrangler pages deploy ./dist --project-name bierecode-site --branch main
 
-      - name: Upload Terraform state to KV
-        if: env.TF_STATE_NAMESPACE_ID != '' && hashFiles('infra/terraform.tfstate') != ''
-        shell: bash
-        env:
-          CF_API: https://api.cloudflare.com/client/v4
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          set -e
-          # Persist the state file in Workers KV so the next run can download it.
-          curl -s -X PUT \
-            "$CF_API/accounts/$CF_ACCOUNT_ID/storage/kv/namespaces/$TF_STATE_NAMESPACE_ID/values/terraform.tfstate" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            --data-binary "@infra/terraform.tfstate"

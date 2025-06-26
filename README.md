@@ -68,10 +68,9 @@ The admin interface and `/api/updates` endpoint now rely on [Better Auth](https:
 The repository includes a GitHub Actions workflow that builds the site, provisions the KV namespace with Terraform, and deploys everything to Cloudflare Pages. Configure these repository secrets:
 - `CLOUDFLARE_API_TOKEN` – API token with permissions for Pages and Workers KV
 - `CLOUDFLARE_ACCOUNT_ID` – your Cloudflare account ID
-The Terraform state file is stored in the same KV namespace between deployments. This allows Terraform to remember the namespace ID without relying on an additional backend.
-The workflow runs whenever you push to `main` or update a pull request targeting `main` so you can preview infrastructure changes before merging.
-On each run the workflow downloads this file before `terraform init`. If the file is missing but the namespace already exists, the workflow imports that namespace into the new state so `terraform apply` can proceed. After the run the updated state file is uploaded back to KV.
-The import step uses the format `<account_id>/<namespace_id>` required by the Cloudflare provider.
+The Terraform state file is stored in the same KV namespace between deployments so Terraform remembers resource IDs such as the KV namespace and D1 database. The workflow runs whenever you push to `main` or update a pull request targeting `main`.
+On each run the state file is downloaded before `terraform init`. If it is missing but the resources already exist, the workflow imports them (KV namespace, Pages project, and D1 database) into the new state so `terraform apply` can proceed. Immediately after `terraform apply` the updated state file is uploaded back to KV so later steps cannot leave it stale.
+The import commands use the format `<account_id>/<resource_id>` required by the Cloudflare provider.
 If the Cloudflare Pages project `bierecode-site` does not exist, the workflow creates it automatically before deploying.
 Custom domains `www.bierecode.com` and `bierecode.com` are managed via the Cloudflare API. The workflow checks the current domain list and adds missing entries before deploying.
 
