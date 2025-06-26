@@ -12,7 +12,8 @@ Pages Functions rely on two bindings that are configured automatically
 by Terraform:
 
 - `UPDATES_KV` – Workers KV namespace storing community updates.
-- `DB` – Cloudflare D1 database powering Better Auth.
+- `DB` – Cloudflare D1 database powering Better Auth. The workflow applies
+  `infra/d1.sql` so the schema is ready before any requests.
 
 When running locally with `wrangler pages dev` these bindings are
 defined in `wrangler.toml` so the functions behave the same as in

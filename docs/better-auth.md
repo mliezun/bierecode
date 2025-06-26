@@ -25,4 +25,7 @@ forwards the incoming request to the Better Auth handler.
 
 Terraform provisions the D1 database and attaches it to the Pages project.
 The initial schema is located at `infra/d1.sql`. You can regenerate this schema
-with the Better Auth CLI if needed.
+with the Better Auth CLI if needed. The deployment workflow automatically runs
+`wrangler d1 execute bierecode-auth --file infra/d1.sql` after Terraform
+creates the database so the tables exist before any authentication requests are
+processed.
