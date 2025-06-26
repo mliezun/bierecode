@@ -5,7 +5,8 @@
 -- Better Auth when using the Kysely adapter. If you need to regenerate the
 -- schema you can run `npx better-auth migrations` and update this file.
 
-create table "user" (
+-- Use IF NOT EXISTS so repeated schema applications are harmless
+create table if not exists "user" (
   "id" text not null primary key,
   "name" text not null,
   "email" text not null unique,
@@ -15,7 +16,7 @@ create table "user" (
   "updatedAt" date not null
 );
 
-create table "session" (
+create table if not exists "session" (
   "id" text not null primary key,
   "expiresAt" date not null,
   "token" text not null unique,
@@ -26,7 +27,7 @@ create table "session" (
   "userId" text not null references "user" ("id")
 );
 
-create table "account" (
+create table if not exists "account" (
   "id" text not null primary key,
   "accountId" text not null,
   "providerId" text not null,
@@ -42,7 +43,7 @@ create table "account" (
   "updatedAt" date not null
 );
 
-create table "verification" (
+create table if not exists "verification" (
   "id" text not null primary key,
   "identifier" text not null,
   "value" text not null,
