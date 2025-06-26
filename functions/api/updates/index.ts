@@ -52,7 +52,7 @@ interface Update {
   created: string;
 }
 
-/** Helper to parse basic auth credentials */
+
 
 async function handleGet(env: Env, url: URL): Promise<Response> {
   const language = url.searchParams.get('language');

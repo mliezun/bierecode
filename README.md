@@ -62,7 +62,7 @@ All commands are run from the root of the project, from a terminal:
 Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
 
 ## Admin Authentication
-The `/api/updates` endpoint uses HTTP Basic authentication. Set `ADMIN_USERNAME` and `ADMIN_PASSWORD` in the Cloudflare environment variables or modify `wrangler.toml` for local development.
+The admin interface and `/api/updates` endpoint now rely on [Better Auth](https://www.better-auth.com/docs/introduction). Sessions are stored in a Cloudflare D1 database, provisioned via Terraform. During local development Wrangler exposes the database through the `DB` binding defined in `wrangler.toml`.
 
 ## Continuous Deployment
 The repository includes a GitHub Actions workflow that builds the site, provisions the KV namespace with Terraform, and deploys everything to Cloudflare Pages. Configure these repository secrets:

@@ -17,6 +17,9 @@ which allows Better Auth to execute queries.
 The admin page (`/admin`) now checks for a valid session before displaying the
 form. Unauthenticated users are redirected to `/login`.
 
+All `/api/auth/*` requests are handled by `functions/api/auth/[[path]].ts`, which
+forwards the incoming request to the Better Auth handler.
+
 ## Database Schema
 
 Terraform provisions the D1 database and attaches it to the Pages project.
