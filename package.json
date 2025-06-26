@@ -13,6 +13,9 @@
     "@astrojs/solid-js": "^5.0.8",
     "@tailwindcss/vite": "^4.1.4",
     "astro": "^5.7.4",
+    "better-auth": "^1.2.10",
+    "kysely": "^0.28.2",
+    "kysely-d1": "^0.4.0",
     "solid-js": "^1.9.5",
     "tailwindcss": "^4.1.4"
   }

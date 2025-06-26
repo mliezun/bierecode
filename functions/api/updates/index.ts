@@ -4,19 +4,19 @@
  * Deployed as a Cloudflare Pages Function and backed by Workers KV.
  * Provides JSON endpoints:
  *   - GET  /api/updates  -> list stored updates with optional filters
- *   - POST /api/updates  -> create a new update, authenticated via HTTP Basic
+ *   - POST /api/updates  -> create a new update, authenticated via Better Auth
  *
  * The KV namespace binding is named `UPDATES_KV` and is provisioned by Terraform.
  * Build and deployment are handled automatically by GitHub Actions.
  */
+import { createAuth } from '../../../src/lib/auth-server';
 // Cloudflare Pages Function: Manage community updates
 //
 // This handler provides a simple JSON API backed by a KV namespace. It supports
 // GET requests for listing updates and POST requests for creating new updates.
 //
-// Updates are stored as JSON objects keyed by a generated UUID. Basic
-// authentication protects write operations. Provide credentials using the
-// environment variables `ADMIN_USERNAME` and `ADMIN_PASSWORD`.
+// Updates are stored as JSON objects keyed by a generated UUID.
+// Write operations require a valid Better Auth session.
 //
 // Expected JSON for POST requests:
 // {
@@ -53,37 +53,6 @@ interface Update {
 }
 
 /** Helper to parse basic auth credentials */
-function parseBasicAuth(authHeader: string | null): [string, string] | null {
-  if (!authHeader?.startsWith('Basic ')) return null;
-  const [, encoded] = authHeader.split(' ');
-  try {
-    const decoded = atob(encoded);
-    const [user, pass] = decoded.split(':');
-    return [user, pass];
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Compare two strings in constant time.
- *
- * Cloudflare does not populate undefined environment variables, so
- * authentication may pass `undefined` values when credentials are
- * missing. To avoid runtime exceptions we treat any non-string input
- * as an automatic mismatch.
- */
-function safeEqual(a: string | undefined, b: string | undefined): boolean {
-  if (typeof a !== "string" || typeof b !== "string") return false;
-  const len = Math.max(a.length, b.length);
-  const viewA = a.padEnd(len);
-  const viewB = b.padEnd(len);
-  let result = 0;
-  for (let i = 0; i < len; i++) {
-    result |= viewA.charCodeAt(i) ^ viewB.charCodeAt(i);
-  }
-  return result === 0;
-}
 
 async function handleGet(env: Env, url: URL): Promise<Response> {
   const language = url.searchParams.get('language');
@@ -108,10 +77,9 @@ async function handleGet(env: Env, url: URL): Promise<Response> {
 }
 
 async function handlePost(request: Request, env: Env): Promise<Response> {
-  const auth = parseBasicAuth(request.headers.get('Authorization'));
-  if (!auth ||
-      !safeEqual(auth[0], env.ADMIN_USERNAME) ||
-      !safeEqual(auth[1], env.ADMIN_PASSWORD)) {
+  const auth = createAuth(env);
+  const { data } = await auth.api.getSession({ headers: request.headers });
+  if (!data?.session) {
     return new Response('Unauthorized', { status: 401 });
   }
 
@@ -147,8 +115,7 @@ async function handlePost(request: Request, env: Env): Promise<Response> {
 
 interface Env {
   UPDATES_KV: KVNamespace;
-  ADMIN_USERNAME: string;
-  ADMIN_PASSWORD: string;
+  DB: D1Database;
 }
 
 export const onRequest: PagesFunction<Env> = async (context) => {

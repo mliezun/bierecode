@@ -10,5 +10,6 @@ preview_id = "00000000000000000000000000000000"
 
 # Environment variables for basic auth credentials
 [vars]
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "change-me"
+
+[d1_databases]
+DB = { binding = "DB", database_name = "bierecode-auth", database_id = "00000000-0000-0000-0000-000000000000" }

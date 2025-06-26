@@ -54,6 +54,12 @@ resource "cloudflare_workers_kv_namespace" "updates" {
   title      = "bierecode-updates"
 }
 
+# Cloudflare D1 database used for Better Auth
+resource "cloudflare_d1_database" "auth" {
+  account_id = var.account_id
+  name       = "bierecode-auth"
+}
+
 resource "cloudflare_pages_project" "site" {
   account_id        = var.account_id
   name              = "bierecode-site"
@@ -69,6 +75,9 @@ resource "cloudflare_pages_project" "site" {
       kv_namespaces = {
         "UPDATES_KV" = cloudflare_workers_kv_namespace.updates.id
       }
+      d1_databases = {
+        "DB" = cloudflare_d1_database.auth.id
+      }
     }
 
     production {
@@ -78,10 +87,17 @@ resource "cloudflare_pages_project" "site" {
       kv_namespaces = {
         "UPDATES_KV" = cloudflare_workers_kv_namespace.updates.id
       }
+      d1_databases = {
+        "DB" = cloudflare_d1_database.auth.id
+      }
     }
   }
 }
 
 output "kv_namespace_id" {
   value = cloudflare_workers_kv_namespace.updates.id
+}
+
+output "d1_database_id" {
+  value = cloudflare_d1_database.auth.id
 }

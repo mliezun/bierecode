@@ -71,13 +71,11 @@ export function AdminForm(): JSX.Element {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
     const payload = readForm(form);
-    const basic = btoa(`${form.username.value}:${form.password.value}`);
 
     const res = await fetch('/api/updates', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Basic ${basic}`,
       },
       body: JSON.stringify(buildBody(payload)),
     });
@@ -94,14 +92,6 @@ export function AdminForm(): JSX.Element {
     <div class="flex items-center justify-center min-h-screen bg-gradient-to-br from-yellow-50 to-white">
       <form class="w-full max-w-xl space-y-5 bg-white/70 backdrop-blur-md p-8 rounded-xl shadow-lg" onSubmit={handleSubmit}>
         <h1 class="text-3xl font-bold text-center">Publish Update</h1>
-        <div class="space-y-1">
-          <label class="block text-sm font-medium" for="username">Username</label>
-          <input id="username" name="username" type="text" class="w-full border rounded-md p-2" required />
-        </div>
-        <div class="space-y-1">
-          <label class="block text-sm font-medium" for="password">Password</label>
-          <input id="password" name="password" type="password" class="w-full border rounded-md p-2" required />
-        </div>
         <div class="space-y-1">
           <label class="block text-sm font-medium" for="title">Title</label>
           <input id="title" name="title" type="text" class="w-full border rounded-md p-2" required />
