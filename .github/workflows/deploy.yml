@@ -85,6 +85,21 @@ jobs:
         # bring the existing namespace under Terraform management.
         run: terraform import cloudflare_workers_kv_namespace.updates "$TF_VAR_account_id/$TF_STATE_NAMESPACE_ID"
 
+      - name: Import existing Pages project when missing
+        working-directory: infra
+        env:
+          TF_VAR_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TF_VAR_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -e
+          # Import the Cloudflare Pages project if it is not yet tracked in state.
+          # The `terraform state list` command exits with a non-zero status when
+          # a resource address is absent, allowing us to detect whether the
+          # project has already been imported.
+          if ! terraform state list cloudflare_pages_project.site >/dev/null 2>&1; then
+            terraform import cloudflare_pages_project.site "$TF_VAR_account_id/bierecode-site"
+          fi
+
       - name: Terraform fmt check
         working-directory: infra
         run: terraform fmt -check

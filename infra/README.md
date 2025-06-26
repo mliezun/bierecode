@@ -16,6 +16,12 @@ The workflow saves the Terraform state file to Workers KV so Terraform knows the
 Terraform creates the `bierecode-site` Pages project and links the `UPDATES_KV` namespace so API routes can write to storage.
 Custom domains `www.bierecode.com` and `bierecode.com` are verified through the Cloudflare API and created when missing.
 
+If Terraform starts with an empty state file, the workflow imports this existing
+Pages project before running `terraform apply`. Without the import step the
+apply would fail because the project already exists on Cloudflare but is not yet
+tracked by Terraform. The import command expects the identifier in the format
+`<account_id>/<project_name>`.
+
 ## Terraform State
 
 The workflow does not rely on a remote backend. Instead, the Terraform state
