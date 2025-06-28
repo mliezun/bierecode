@@ -77,6 +77,13 @@ The repository includes a GitHub Actions workflow that builds the site, provisio
 - `BETTER_AUTH_SECRET` – secret used to sign Better Auth cookies
 - `GH_CLIENT_ID` – OAuth client ID for the GitHub provider
 - `GH_CLIENT_SECRET` – OAuth client secret for the GitHub provider
+
+The GitHub Actions workflow passes these secrets to Terraform via `TF_VAR_`
+environment variables. For example `TF_VAR_gh_client_id` and
+`TF_VAR_gh_client_secret` populate the `gh_client_id` and `gh_client_secret`
+variables defined in `infra/main.tf`. Terraform then sets the corresponding
+environment variables on the Pages project so Better Auth can perform GitHub
+OAuth during login.
 The Terraform state file is stored in the same KV namespace between deployments so Terraform remembers resource IDs such as the KV namespace and D1 database. The workflow runs whenever you push to `main` or update a pull request targeting `main`.
 On each run the state file is downloaded before `terraform init`. If it is missing but the resources already exist, the workflow imports them (KV namespace, Pages project, and D1 database) into the new state so `terraform apply` can proceed. Immediately after `terraform apply` the updated state file is uploaded back to KV so later steps cannot leave it stale.
 The workflow then updates `wrangler.toml` with the actual resource IDs so local development and deployments reference the correct KV namespace and D1 database. After injecting the IDs it also executes `infra/d1.sql` against the remote database so the Better Auth tables exist before any requests hit the API.
