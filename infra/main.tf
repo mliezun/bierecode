@@ -55,6 +55,18 @@ variable "better_auth_secret" {
   sensitive   = true
 }
 
+variable "github_client_id" {
+  description = "OAuth client ID for GitHub login"
+  type        = string
+  sensitive   = true
+}
+
+variable "github_client_secret" {
+  description = "OAuth client secret for GitHub login"
+  type        = string
+  sensitive   = true
+}
+
 resource "cloudflare_workers_kv_namespace" "updates" {
   account_id = var.account_id
   title      = "bierecode-updates"
@@ -86,6 +98,8 @@ resource "cloudflare_pages_project" "site" {
       }
       environment_variables = {
         BETTER_AUTH_SECRET = var.better_auth_secret
+        GITHUB_CLIENT_ID     = var.github_client_id
+        GITHUB_CLIENT_SECRET = var.github_client_secret
       }
     }
 
@@ -101,6 +115,8 @@ resource "cloudflare_pages_project" "site" {
       }
       environment_variables = {
         BETTER_AUTH_SECRET = var.better_auth_secret
+        GITHUB_CLIENT_ID     = var.github_client_id
+        GITHUB_CLIENT_SECRET = var.github_client_secret
       }
     }
   }

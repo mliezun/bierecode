@@ -78,10 +78,14 @@ jobs:
       - name: Import existing namespace when state is missing
         if: env.STATE_FOUND == 'false' && env.TF_STATE_NAMESPACE_ID != ''
         working-directory: infra
-        env:
+      env:
           TF_VAR_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           TF_VAR_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           TF_VAR_better_auth_secret: ${{ secrets.BETTER_AUTH_SECRET }}
+          TF_VAR_github_client_id: ${{ secrets.GITHUB_CLIENT_ID }}
+          TF_VAR_github_client_secret: ${{ secrets.GITHUB_CLIENT_SECRET }}
+          TF_VAR_github_client_id: ${{ secrets.GITHUB_CLIENT_ID }}
+          TF_VAR_github_client_secret: ${{ secrets.GITHUB_CLIENT_SECRET }}
         # Terraform requires the ID in the form "accountID/namespaceID" when importing
         # resources. We combine the account ID with the detected namespace ID to
         # bring the existing namespace under Terraform management.
@@ -105,10 +109,12 @@ jobs:
 
       - name: Import existing D1 database when missing
         working-directory: infra
-        env:
+      env:
           TF_VAR_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           TF_VAR_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           TF_VAR_better_auth_secret: ${{ secrets.BETTER_AUTH_SECRET }}
+          TF_VAR_github_client_id: ${{ secrets.GITHUB_CLIENT_ID }}
+          TF_VAR_github_client_secret: ${{ secrets.GITHUB_CLIENT_SECRET }}
           CF_API: https://api.cloudflare.com/client/v4
         run: |
           set -e
@@ -129,10 +135,12 @@ jobs:
 
       - name: Terraform apply
         working-directory: infra
-        env:
+      env:
           TF_VAR_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           TF_VAR_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           TF_VAR_better_auth_secret: ${{ secrets.BETTER_AUTH_SECRET }}
+          TF_VAR_github_client_id: ${{ secrets.GITHUB_CLIENT_ID }}
+          TF_VAR_github_client_secret: ${{ secrets.GITHUB_CLIENT_SECRET }}
         run: terraform apply -auto-approve
 
       - name: Capture KV namespace ID

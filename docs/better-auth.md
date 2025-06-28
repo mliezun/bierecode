@@ -17,11 +17,14 @@ defines this variable on the Pages project and it is also configured in
 ## Client Usage
 
 `src/lib/auth-client.ts` exposes a SolidJS auth client. Components can call
-`authClient.signIn.email` or `authClient.useSession` to manage user sessions.
+`authClient.signIn.magicLink` or start an OAuth flow with
+`authClient.signIn.genericOAuth` to manage user sessions. The
+`useSession` hook keeps the UI in sync with the current session state.
 
 The admin page (`/admin`) now checks for a valid session before displaying the
 form. Unauthenticated users are redirected to `/login`.
-Users without an account can visit `/register` to create one.
+Users without an account can request a magic link at `/register` which both
+creates an account and signs them in when they click the link.
 
 All `/api/auth/*` requests are handled by `functions/api/auth/[[path]].ts`, which
 forwards the incoming request to the Better Auth handler.

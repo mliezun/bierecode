@@ -3,7 +3,9 @@
  * ----------------------
  * Provides a stylish registration form for creating a Better Auth account.
  * The design mirrors the login and admin forms so the site feels cohesive.
- * It uses the Better Auth client to create a new email/password account.
+ * It uses the Better Auth client to send a magic sign-in link. New users do not
+ * require a password and can simply click the link in their inbox to complete
+ * registration.
  *
  * On successful registration the user is redirected directly to the admin page.
  */
@@ -17,14 +19,12 @@ export function RegisterForm(): JSX.Element {
   const handleSubmit = async (e: Event) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
-    const name = form.name.value as string;
     const email = form.email.value as string;
-    const password = form.password.value as string;
-    const { error } = await authClient.signUp.email({ name, email, password });
+    const { error } = await authClient.signIn.magicLink({ email });
     if (error) {
-      setStatus(error.message || 'Registration failed');
+      setStatus(error.message || 'Request failed');
     } else {
-      window.location.href = '/admin';
+      setStatus('Check your email for the sign-in link.');
     }
   };
 
@@ -39,10 +39,6 @@ export function RegisterForm(): JSX.Element {
         <div>
           <label for="email" class="block text-sm font-medium">Email</label>
           <input id="email" name="email" type="email" required class="w-full border rounded-md p-2" />
-        </div>
-        <div>
-          <label for="password" class="block text-sm font-medium">Password</label>
-          <input id="password" name="password" type="password" required class="w-full border rounded-md p-2" />
         </div>
         <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md w-full">Register</button>
         <p class="text-sm text-center">{status()}</p>
