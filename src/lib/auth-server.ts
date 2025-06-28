@@ -24,8 +24,8 @@ export function createAuth(env: {
   DB: D1Database;
   BETTER_AUTH_SECRET?: string;
   AUTH_SECRET?: string;
-  GITHUB_CLIENT_ID?: string;
-  GITHUB_CLIENT_SECRET?: string;
+  GH_CLIENT_ID?: string;
+  GH_CLIENT_SECRET?: string;
 }) {
   const db = new Kysely<any>({ dialect: new D1Dialect({ database: env.DB }) });
   return betterAuth({
@@ -43,8 +43,8 @@ export function createAuth(env: {
         config: [
           {
             providerId: 'github',
-            clientId: env.GITHUB_CLIENT_ID ?? '',
-            clientSecret: env.GITHUB_CLIENT_SECRET ?? '',
+            clientId: env.GH_CLIENT_ID ?? '',
+            clientSecret: env.GH_CLIENT_SECRET ?? '',
             scopes: ['read:user', 'user:email'],
           },
         ],

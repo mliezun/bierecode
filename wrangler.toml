@@ -14,8 +14,8 @@ preview_id = "00000000000000000000000000000000"
 
 # Local secret for Better Auth session cookies
 BETTER_AUTH_SECRET = "dev-secret"
-GITHUB_CLIENT_ID = "local-id"
-GITHUB_CLIENT_SECRET = "local-secret"
+GH_CLIENT_ID = "local-id"
+GH_CLIENT_SECRET = "local-secret"
 
 [[d1_databases]]
 binding = "DB"

@@ -55,13 +55,13 @@ variable "better_auth_secret" {
   sensitive   = true
 }
 
-variable "github_client_id" {
+variable "gh_client_id" {
   description = "OAuth client ID for GitHub login"
   type        = string
   sensitive   = true
 }
 
-variable "github_client_secret" {
+variable "gh_client_secret" {
   description = "OAuth client secret for GitHub login"
   type        = string
   sensitive   = true
@@ -98,8 +98,8 @@ resource "cloudflare_pages_project" "site" {
       }
       environment_variables = {
         BETTER_AUTH_SECRET = var.better_auth_secret
-        GITHUB_CLIENT_ID     = var.github_client_id
-        GITHUB_CLIENT_SECRET = var.github_client_secret
+        GH_CLIENT_ID     = var.gh_client_id
+        GH_CLIENT_SECRET = var.gh_client_secret
       }
     }
 
@@ -115,8 +115,8 @@ resource "cloudflare_pages_project" "site" {
       }
       environment_variables = {
         BETTER_AUTH_SECRET = var.better_auth_secret
-        GITHUB_CLIENT_ID     = var.github_client_id
-        GITHUB_CLIENT_SECRET = var.github_client_secret
+        GH_CLIENT_ID     = var.gh_client_id
+        GH_CLIENT_SECRET = var.gh_client_secret
       }
     }
   }
