@@ -23,3 +23,8 @@ pnpm-debug.log*
 # jetbrains setting folder
 .idea/
 .dev.vars
+
+# Terraform files
+.terraform/
+.terraform.lock.hcl
+infra/terraform.tfstate

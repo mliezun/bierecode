@@ -98,8 +98,8 @@ resource "cloudflare_pages_project" "site" {
       }
       environment_variables = {
         BETTER_AUTH_SECRET = var.better_auth_secret
-        GH_CLIENT_ID     = var.gh_client_id
-        GH_CLIENT_SECRET = var.gh_client_secret
+        GH_CLIENT_ID       = var.gh_client_id
+        GH_CLIENT_SECRET   = var.gh_client_secret
       }
     }
 
@@ -115,8 +115,8 @@ resource "cloudflare_pages_project" "site" {
       }
       environment_variables = {
         BETTER_AUTH_SECRET = var.better_auth_secret
-        GH_CLIENT_ID     = var.gh_client_id
-        GH_CLIENT_SECRET = var.gh_client_secret
+        GH_CLIENT_ID       = var.gh_client_id
+        GH_CLIENT_SECRET   = var.gh_client_secret
       }
     }
   }
