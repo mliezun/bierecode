@@ -16,7 +16,25 @@ npm install
 ```
 
 ## 3. Configure Environment Variables
-Update `wrangler.toml` (or create a `.dev.vars` file) with values for:
+Environment variables for BetterAuth are loaded from `.dev.vars` when running
+locally. Copy the provided template and adjust as needed:
+
+```bash
+cp .dev.vars.example .dev.vars
+```
+
+The template ships with development-friendly values:
+
+```bash
+BETTER_AUTH_SECRET=dev-secret-change-me
+BETTER_AUTH_URL=http://localhost:8788
+```
+
+If you need to override them, edit `.dev.vars` or supply your own values. For
+production deploys, configure these in the Cloudflare Pages dashboard instead
+of `wrangler.toml`.
+
+For reference, the `wrangler.toml` placeholders expect values shaped like:
 
 ```toml
 BETTER_AUTH_SECRET = "your-long-random-secret"
@@ -61,5 +79,3 @@ To verify the full admin flow locally, run Playwright (this command builds the s
 npm run test:e2e
 ```
 Playwright downloads Chromium the first time it runs.
-
-
