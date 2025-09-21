@@ -1,5 +1,8 @@
 ---
-import { AdminForm } from './components/admin-form/admin-form';
+import { AdminDashboard } from './components/dashboard/admin-dashboard';
+
+const initialUser = Astro.locals.user;
+const initialSession = Astro.locals.session;
 ---
 
-<AdminForm client:load />
+<AdminDashboard client:load initialUser={initialUser} initialSession={initialSession} />

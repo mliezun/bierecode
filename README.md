@@ -1,89 +1,73 @@
 # Bière Code Site
 
-This project hosts the Bière Code website built with [Astro](https://astro.build). Community updates and events are managed through Cloudflare Pages Functions and a KV store.
+Bière Code runs on [Astro](https://astro.build) with Cloudflare Pages Functions for dynamic features. Community updates are stored in Workers KV, authentication is powered by [BetterAuth](https://better-auth.com), and admin data lives in a D1 database.
 
-## Features
-- **Community Updates API**: `/api/updates` backed by Cloudflare KV.
-- **Admin UI**: [`/admin`](docs/admin-ui.md) page to submit new posts or events.
-- **Demo Days Submissions**: `/demo-days` page lets developers propose live demos.
-- **Public Updates List**: `/updates` page shows all posts and events.
-- **Infrastructure as Code**: Terraform script in `infra/` sets up the KV namespace.
-- **Automated Deployment**: GitHub Actions runs Terraform and deploys to Cloudflare Pages.
+## Stack
+- **Astro 5** for the public site and component rendering
+- **BetterAuth + Cloudflare D1** for credential & session management
+- **Cloudflare Pages Functions** for `/api/*` routes (updates, demo days, auth)
+- **Workers KV** for the community updates feed
+- **Tailwind CSS** for styling the admin UI
 
-Follow the sections below for development commands from the original Astro template.
+## Local Development
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
+2. **Configure Wrangler**
+   The repo includes a starter `wrangler.toml` with placeholders. Update the file (or environment overrides) with real IDs/secrets when connecting to Cloudflare:
+   ```toml
+   [vars]
+   BETTER_AUTH_SECRET = "your-long-random-secret"
+   BETTER_AUTH_URL = "http://localhost:8788" # set to the Pages dev URL
+   ```
+   The file already defines the `UPDATES_KV` binding and a D1 database named `bierecode-auth`.
+3. **Run database migrations** (uses the bundled SQL files under `drizzle/`)
+   ```bash
+   npm run db:migrate
+   ```
+   For a remote environment drop the `--local` flag: `npm run db:migrate:remote`.
+4. **Build the static site**
+   ```bash
+   npm run build
+   ```
+5. **Launch the full stack locally**
+   ```bash
+   WRANGLER_PERSIST_TO=.wrangler/state npx wrangler pages dev ./dist --persist-to .wrangler/state
+   ```
+   Wrangler serves the static build, the Pages Functions, BetterAuth, KV, and the D1 binding in one process (default URL: <http://localhost:8788>).
 
-# Astro Starter Kit: Basics
+### Useful scripts
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Astro dev server for static pages only (no functions/auth) |
+| `npm run build` | Production build to `dist/` |
+| `npm run preview` | Preview the static build |
+| `npm run db:generate` | Regenerate Drizzle schema from TypeScript definitions |
+| `npm run db:migrate` | Apply migrations to the local D1 database |
+| `npm run db:migrate:remote` | Apply migrations to the remote D1 database |
+| `npm run test:e2e` | Run the Playwright E2E suite (starts Wrangler dev server) |
 
-```sh
-npm create astro@latest -- --template basics
-```
-
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/astro/tree/latest/examples/basics)
-[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/withastro/astro/tree/latest/examples/basics)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/withastro/astro?devcontainer_path=.devcontainer/basics/devcontainer.json)
-
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
-
-![just-the-basics](https://github.com/withastro/astro/assets/2244813/a0a5533c-a856-4198-8470-2d67b1d7c554)
-
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src/
-│   ├── layouts/
-│   │   └── Layout.astro
-│   └── pages/
-│       └── index.astro
-└── package.json
-```
-
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
-
-## Admin Authentication
-The `/api/updates` endpoint uses HTTP Basic authentication. Set `ADMIN_USERNAME` and `ADMIN_PASSWORD` in the Cloudflare environment variables or modify `wrangler.toml` for local development.
-
-## Continuous Deployment
-The repository includes a GitHub Actions workflow that builds the site, provisions the KV namespace with Terraform, and deploys everything to Cloudflare Pages. Configure these repository secrets:
-- `CLOUDFLARE_API_TOKEN` – API token with permissions for Pages and Workers KV
-- `CLOUDFLARE_ACCOUNT_ID` – your Cloudflare account ID
-The Terraform state file is stored in the same KV namespace between deployments. This allows Terraform to remember the namespace ID without relying on an additional backend.
-The workflow runs whenever you push to `main` or update a pull request targeting `main` so you can preview infrastructure changes before merging.
-On each run the workflow downloads this file before `terraform init`. If the file is missing but the namespace already exists, the workflow imports that namespace into the new state so `terraform apply` can proceed. After the run the updated state file is uploaded back to KV.
-The import step uses the format `<account_id>/<namespace_id>` required by the Cloudflare provider.
-If the Cloudflare Pages project `bierecode-site` does not exist, the workflow creates it automatically before deploying.
-Custom domains `www.bierecode.com` and `bierecode.com` are managed via the Cloudflare API. The workflow checks the current domain list and adds missing entries before deploying.
-
-## Domains and Redirects
-The site uses custom domains `www.bierecode.com` and `bierecode.com`.
-A Cloudflare Pages middleware in `functions/_middleware.ts` redirects
-all requests for `bierecode.com` to the `www` subdomain to keep a
-single canonical hostname.
+## Authentication
+- All admin and API writes go through BetterAuth (`/api/auth/*`).
+- Sessions are stored in D1; BetterAuth cookies are scoped to the site domain.
+- The admin UI (`/admin`) is powered by a dashboard shell. Use the **Create account** toggle to register new users; accounts can hold one of three roles: *(none)*, `manager`, or `admin`. Managers can publish and edit updates, admins can additionally manage roles.
+- The updates workspace supports full CRUD: create, edit, delete, review history, and jump to the public view for any entry.
+- Use Wrangler to promote an account to admin. Example (local):
+  ```bash
+  wrangler d1 execute bierecode-auth --local \
+    --command "UPDATE user SET role = 'admin' WHERE email = 'hello@bierecode.com';"
+  ```
 
 ## Cloudflare Pages Functions
-The `functions/` directory is deployed as [Pages Functions](https://developers.cloudflare.com/pages/functions/). Any file inside this directory becomes an endpoint matching its path. For example, `functions/api/demo-days/index.ts` is served at `/api/demo-days`.
+- `/api/auth/*` is handled by BetterAuth and requires the `DB` binding plus the auth env vars.
+- `/api/updates` now trusts BetterAuth sessions (no more HTTP Basic). Authenticated managers or admins can create, update, or delete entries; `GET` remains public.
+- `/api/users` exposes an admin-only API for listing accounts and updating roles.
+- `/api/demo-days` continues to run with Pages Functions as before.
 
-During development run `wrangler pages dev ./dist` after building to test these functions locally. When deploying through GitHub Actions the same directory is automatically compiled and uploaded to Cloudflare.
+## Additional Docs
+- [`docs/admin-ui.md`](docs/admin-ui.md) – notes on the admin experience
+- [`docs/cloudflare-functions.md`](docs/cloudflare-functions.md) – Pages Functions deployment details
+- [`docs/running-locally.md`](docs/running-locally.md) – step-by-step local setup, including Wrangler usage
 
-Terraform provisions the Pages project and attaches the `UPDATES_KV` namespace automatically. No manual configuration is required.
+Feel free to adapt the layout or extend the auth flow with additional BetterAuth plugins (2FA, magic links, OAuth providers, etc.).

@@ -4,11 +4,17 @@ compatibility_date = "2024-05-05"
 # KV namespace binding for community updates
 [[kv_namespaces]]
 binding = "UPDATES_KV"
-# IDs are filled in automatically by the deployment workflow
 id = "00000000000000000000000000000000"
 preview_id = "00000000000000000000000000000000"
 
-# Environment variables for basic auth credentials
+# D1 database binding for BetterAuth
+[[d1_databases]]
+binding = "DB"
+database_name = "bierecode-auth"
+database_id = "00000000-0000-0000-0000-000000000000"
+preview_database_id = "11111111-1111-1111-1111-111111111111"
+migrations_dir = "drizzle"
+
 [vars]
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "change-me"
+BETTER_AUTH_SECRET = "dev-secret-change-me"
+BETTER_AUTH_URL = "http://localhost:8788"

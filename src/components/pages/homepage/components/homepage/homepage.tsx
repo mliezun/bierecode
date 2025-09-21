@@ -8,6 +8,7 @@ interface Translation {
   title: string;
   description: string;
   meetupLink: string;
+  updatesLink: string;
   language: string;
   french: string;
   english: string;
@@ -57,14 +58,22 @@ export function Homepage(): JSX.Element {
       </div>
       <h1 class="text-5xl text-center tracking-tight leading-tight font-grotesk font-bold">{translation().title}</h1>
       <p class="text-xl text-center max-w-2xl text-gray-700">{translation().description}</p>
-      <a
-        href="https://www.meetup.com/biere-code-beer-paris/"
-        class="inline-block bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-8 py-4 rounded-full shadow-lg transition-all transform hover:scale-105"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {translation().meetupLink}
-      </a>
+      <div class="flex flex-col md:flex-row items-center gap-4">
+        <a
+          href="https://www.meetup.com/biere-code-beer-paris/"
+          class="inline-block bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-8 py-4 rounded-full shadow-lg transition-all transform hover:scale-105"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {translation().meetupLink}
+        </a>
+        <a
+          href="/updates"
+          class="inline-block border border-yellow-400 text-yellow-800 font-semibold px-8 py-4 rounded-full shadow-lg/10 hover:bg-yellow-100 transition-all transform hover:scale-105"
+        >
+          {translation().updatesLink}
+        </a>
+      </div>
     </div>
   );
 }

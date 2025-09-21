@@ -1,40 +1,7 @@
-/**
- * Community updates API.
- *
- * Deployed as a Cloudflare Pages Function and backed by Workers KV.
- * Provides JSON endpoints:
- *   - GET  /api/updates  -> list stored updates with optional filters
- *   - POST /api/updates  -> create a new update, authenticated via HTTP Basic
- *
- * The KV namespace binding is named `UPDATES_KV` and is provisioned by Terraform.
- * Build and deployment are handled automatically by GitHub Actions.
- */
-// Cloudflare Pages Function: Manage community updates
-//
-// This handler provides a simple JSON API backed by a KV namespace. It supports
-// GET requests for listing updates and POST requests for creating new updates.
-//
-// Updates are stored as JSON objects keyed by a generated UUID. Basic
-// authentication protects write operations. Provide credentials using the
-// environment variables `ADMIN_USERNAME` and `ADMIN_PASSWORD`.
-//
-// Expected JSON for POST requests:
-// {
-//   title: string,
-//   content: string,
-//   language: 'en' | 'fr' | string,
-//   type: 'post' | 'event',
-//   tags?: string[],
-//   event?: { date?: string; time?: string; location?: string; duration?: string }
-// }
-//
-// Query params for GET:
-//   language - filter by language
-//   type     - filter by 'post' or 'event'
-//   tag      - filter where tags contain this value
-//
-// The KV binding is configured as `UPDATES_KV` in wrangler.toml.
-// Compatibility date must be defined in wrangler.toml as well.
+import { getAuth } from '../../../src/server/auth';
+import { withForwardedFor } from '../../../src/server/request';
+
+const UPDATE_PREFIX = 'update:';
 
 interface Update {
   id: string;
@@ -50,42 +17,52 @@ interface Update {
     duration?: string;
   };
   created: string;
+  authorId?: string;
+  updated?: string;
 }
 
-/** Helper to parse basic auth credentials */
-function parseBasicAuth(authHeader: string | null): [string, string] | null {
-  if (!authHeader?.startsWith('Basic ')) return null;
-  const [, encoded] = authHeader.split(' ');
-  try {
-    const decoded = atob(encoded);
-    const [user, pass] = decoded.split(':');
-    return [user, pass];
-  } catch {
-    return null;
-  }
+function updateKey(id: string): string {
+  return `${UPDATE_PREFIX}${id}`;
 }
 
-/**
- * Compare two strings in constant time.
- *
- * Cloudflare does not populate undefined environment variables, so
- * authentication may pass `undefined` values when credentials are
- * missing. To avoid runtime exceptions we treat any non-string input
- * as an automatic mismatch.
- */
-function safeEqual(a: string | undefined, b: string | undefined): boolean {
-  if (typeof a !== "string" || typeof b !== "string") return false;
-  const len = Math.max(a.length, b.length);
-  const viewA = a.padEnd(len);
-  const viewB = b.padEnd(len);
-  let result = 0;
-  for (let i = 0; i < len; i++) {
-    result |= viewA.charCodeAt(i) ^ viewB.charCodeAt(i);
+function normalizeTags(tags: unknown): string[] {
+  if (!tags) return [];
+  if (Array.isArray(tags)) {
+    return tags
+      .map((tag) => String(tag).trim())
+      .filter(Boolean);
   }
-  return result === 0;
+  return [];
+}
+
+function normalizeEvent(event: unknown): Update['event'] | undefined {
+  if (!event || typeof event !== 'object') return undefined;
+  const candidate = event as Record<string, unknown>;
+  const clean = {
+    date: candidate.date ? String(candidate.date) : undefined,
+    time: candidate.time ? String(candidate.time) : undefined,
+    location: candidate.location ? String(candidate.location) : undefined,
+    duration: candidate.duration ? String(candidate.duration) : undefined,
+  } as Update['event'];
+
+  if (!clean.date && !clean.time && !clean.location && !clean.duration) {
+    return undefined;
+  }
+  return clean;
 }
 
 async function handleGet(env: Env, url: URL): Promise<Response> {
+  const id = url.searchParams.get('id');
+  if (id) {
+    const record = (await env.UPDATES_KV.get(updateKey(id), 'json')) as Update | null;
+    if (!record) {
+      return new Response('Not Found', { status: 404 });
+    }
+    return new Response(JSON.stringify(record), {
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
   const language = url.searchParams.get('language');
   const type = url.searchParams.get('type');
   const tag = url.searchParams.get('tag');
@@ -93,7 +70,7 @@ async function handleGet(env: Env, url: URL): Promise<Response> {
   const { keys } = await env.UPDATES_KV.list();
   const items: Update[] = [];
   for (const key of keys) {
-    const stored = await env.UPDATES_KV.get(key.name, 'json') as Update | null;
+    const stored = (await env.UPDATES_KV.get(key.name, 'json')) as Update | null;
     if (!stored) continue;
     if (language && stored.language !== language) continue;
     if (type && stored.type !== type) continue;
@@ -107,14 +84,7 @@ async function handleGet(env: Env, url: URL): Promise<Response> {
   });
 }
 
-async function handlePost(request: Request, env: Env): Promise<Response> {
-  const auth = parseBasicAuth(request.headers.get('Authorization'));
-  if (!auth ||
-      !safeEqual(auth[0], env.ADMIN_USERNAME) ||
-      !safeEqual(auth[1], env.ADMIN_PASSWORD)) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-
+async function handlePost(request: Request, env: Env, userId: string): Promise<Response> {
   let body: Partial<Update>;
   try {
     body = await request.json();
@@ -127,28 +97,99 @@ async function handlePost(request: Request, env: Env): Promise<Response> {
   }
 
   const id = crypto.randomUUID();
+  const tags = normalizeTags(body.tags);
+  const type = body.type as 'post' | 'event';
+  const event = type === 'event' ? normalizeEvent(body.event) : undefined;
+
   const update: Update = {
     id,
     title: String(body.title),
     content: String(body.content),
     language: String(body.language),
-    type: body.type as 'post' | 'event',
-    tags: body.tags || [],
-    event: body.event,
+    type,
+    tags,
+    event,
     created: new Date().toISOString(),
+    authorId: userId,
   };
 
-  await env.UPDATES_KV.put(`update:${id}`, JSON.stringify(update));
+  await env.UPDATES_KV.put(updateKey(id), JSON.stringify(update));
   return new Response(JSON.stringify(update), {
     status: 201,
     headers: { 'content-type': 'application/json' },
   });
 }
 
+async function handlePut(request: Request, env: Env): Promise<Response> {
+  let body: Partial<Update> & { id?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return new Response('Invalid JSON', { status: 400 });
+  }
+
+  if (!body.id) {
+    return new Response('Missing id', { status: 400 });
+  }
+
+  const key = updateKey(body.id);
+  const existing = (await env.UPDATES_KV.get(key, 'json')) as Update | null;
+  if (!existing) {
+    return new Response('Not Found', { status: 404 });
+  }
+
+  const nextType = (body.type as 'post' | 'event') ?? existing.type;
+  const nextTags = body.tags !== undefined ? normalizeTags(body.tags) : existing.tags ?? [];
+  const nextEvent = nextType === 'event'
+    ? normalizeEvent(body.event ?? existing.event)
+    : undefined;
+
+  const update: Update = {
+    ...existing,
+    title: body.title !== undefined ? String(body.title) : existing.title,
+    content: body.content !== undefined ? String(body.content) : existing.content,
+    language: body.language !== undefined ? String(body.language) : existing.language,
+    type: nextType,
+    tags: nextTags,
+    event: nextEvent,
+    updated: new Date().toISOString(),
+  };
+
+  await env.UPDATES_KV.put(key, JSON.stringify(update));
+
+  return new Response(JSON.stringify(update), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  });
+}
+
+async function handleDelete(request: Request, env: Env): Promise<Response> {
+  let body: { id?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return new Response('Invalid JSON', { status: 400 });
+  }
+
+  if (!body.id) {
+    return new Response('Missing id', { status: 400 });
+  }
+
+  const key = updateKey(body.id);
+  const existing = await env.UPDATES_KV.get(key);
+  if (!existing) {
+    return new Response('Not Found', { status: 404 });
+  }
+
+  await env.UPDATES_KV.delete(key);
+  return new Response(null, { status: 204 });
+}
+
 interface Env {
   UPDATES_KV: KVNamespace;
-  ADMIN_USERNAME: string;
-  ADMIN_PASSWORD: string;
+  DB: D1Database;
+  BETTER_AUTH_SECRET: string;
+  BETTER_AUTH_URL?: string;
 }
 
 export const onRequest: PagesFunction<Env> = async (context) => {
@@ -159,11 +200,31 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     return handleGet(env, url);
   }
 
-  if (request.method === 'POST') {
-    return handlePost(request, env);
+  const auth = getAuth(env);
+  const session = await auth.api.getSession({
+    headers: withForwardedFor(request),
+  });
+
+  if (!session) {
+    return new Response('Unauthorized', { status: 401 });
   }
 
-  return new Response('Method Not Allowed', { status: 405 });
+  const role = (session.user as { role?: string }).role ?? 'user';
+  const canManage = role === 'admin' || role === 'manager';
+
+  if (!canManage) {
+    return new Response('Forbidden', { status: 403 });
+  }
+
+  switch (request.method) {
+    case 'POST':
+      return handlePost(request, env, session.user.id);
+    case 'PUT':
+    case 'PATCH':
+      return handlePut(request, env);
+    case 'DELETE':
+      return handleDelete(request, env);
+    default:
+      return new Response('Method Not Allowed', { status: 405 });
+  }
 };
-
-
