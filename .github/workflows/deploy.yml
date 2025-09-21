@@ -104,6 +104,23 @@ jobs:
         working-directory: infra
         run: terraform fmt -check
 
+      - name: Reconcile D1 database state
+        working-directory: infra
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -e
+          if [ -f terraform.tfstate ]; then
+            D1_STATE_ID=$(jq -r '.resources[]? | select(.type=="cloudflare_d1_database" and .name=="auth") | .instances[0].attributes.id // empty' terraform.tfstate)
+            if [ -n "$D1_STATE_ID" ]; then
+              if ! npx wrangler d1 list | grep -q "$D1_STATE_ID"; then
+                terraform state rm cloudflare_d1_database.auth
+              fi
+            fi
+          fi
+
       - name: Terraform apply
         working-directory: infra
         env:

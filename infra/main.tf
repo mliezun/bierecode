@@ -64,6 +64,13 @@ resource "cloudflare_pages_project" "site" {
   name              = "bierecode-site"
   production_branch = "main"
 
+  lifecycle {
+    ignore_changes = [
+      deployment_configs[0].preview[0].environment_variables,
+      deployment_configs[0].production[0].environment_variables,
+    ]
+  }
+
   deployment_configs {
     preview {
       # Each environment accepts a map where the key is the binding name used
@@ -74,6 +81,10 @@ resource "cloudflare_pages_project" "site" {
       kv_namespaces = {
         "UPDATES_KV" = cloudflare_workers_kv_namespace.updates.id
       }
+
+      d1_databases = {
+        "DB" = cloudflare_d1_database.auth.id
+      }
     }
 
     production {
@@ -82,6 +93,10 @@ resource "cloudflare_pages_project" "site" {
       # Cloudflare provider.
       kv_namespaces = {
         "UPDATES_KV" = cloudflare_workers_kv_namespace.updates.id
+      }
+
+      d1_databases = {
+        "DB" = cloudflare_d1_database.auth.id
       }
     }
   }
