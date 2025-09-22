@@ -45,7 +45,7 @@ function normalizeEvent(event: unknown): Update['event'] | undefined {
     duration: candidate.duration ? String(candidate.duration) : undefined,
   } as Update['event'];
 
-  if (!clean.date && !clean.time && !clean.location && !clean.duration) {
+  if (!clean?.date && !clean?.time && !clean?.location && !clean?.duration) {
     return undefined;
   }
   return clean;
@@ -67,7 +67,8 @@ async function handleGet(env: Env, url: URL): Promise<Response> {
   const type = url.searchParams.get('type');
   const tag = url.searchParams.get('tag');
 
-  const { keys } = await env.UPDATES_KV.list();
+  // filter by prefix "update:"
+  const { keys } = await env.UPDATES_KV.list({ prefix: UPDATE_PREFIX });
   const items: Update[] = [];
   for (const key of keys) {
     const stored = (await env.UPDATES_KV.get(key.name, 'json')) as Update | null;
