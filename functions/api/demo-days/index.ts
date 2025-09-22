@@ -36,7 +36,11 @@ async function handleGet(env: Env): Promise<Response> {
     const stored = await env.UPDATES_KV.get(key.name, 'json') as DemoSubmission | null;
     if (stored) items.push(stored);
   }
-  items.sort((a, b) => b.created.localeCompare(a.created));
+  items.sort((a, b) => {
+    const aCreated = a.created ? Date.parse(a.created) : 0;
+    const bCreated = b.created ? Date.parse(b.created) : 0;
+    return bCreated - aCreated;
+  });
   return new Response(JSON.stringify(items), { headers: { 'content-type': 'application/json' } });
 }
 

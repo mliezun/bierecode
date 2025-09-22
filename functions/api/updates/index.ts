@@ -78,7 +78,11 @@ async function handleGet(env: Env, url: URL): Promise<Response> {
     items.push(stored);
   }
 
-  items.sort((a, b) => b.created.localeCompare(a.created));
+  items.sort((a, b) => {
+    const aCreated = a.created ? Date.parse(a.created) : 0;
+    const bCreated = b.created ? Date.parse(b.created) : 0;
+    return bCreated - aCreated;
+  });
   return new Response(JSON.stringify(items), {
     headers: { 'content-type': 'application/json' },
   });
