@@ -1,3 +1,5 @@
+**NOTE:** This was @raphaeltm's experiment in vibe-coding, experimenting with CloudFlare, and experimenting with Astro. Some of this stuff is a bit chaotic because of that 😅
+
 # Bière Code Site
 
 Bière Code runs on [Astro](https://astro.build) with Cloudflare Pages Functions for dynamic features. Community updates are stored in Workers KV, authentication is powered by [BetterAuth](https://better-auth.com), and admin data lives in a D1 database.
