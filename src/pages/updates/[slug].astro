@@ -28,7 +28,10 @@ function formatDate(date: Date): string {
 }
 ---
 
-<Layout>
+<Layout
+  title={`${update.data.title} - Bière & Code Paris`}
+  description={`Read the latest update: ${update.data.title}`}
+>
   <section class="min-h-screen bg-gradient-to-br from-yellow-100 via-white to-white py-16 px-6">
     <div class="max-w-3xl mx-auto space-y-8">
       <article class="rounded-3xl bg-white shadow-[0_30px_45px_-35px_rgba(17,24,39,0.4)] border border-yellow-100 overflow-hidden space-y-6 p-8">
