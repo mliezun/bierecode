@@ -1,0 +1,35 @@
+---
+import { Icon } from 'astro-icon/components';
+
+const links = [
+  {
+    name: "GitHub",
+    url: "https://github.com/bierecode",
+    icon: "simple-icons:github"
+  },
+  {
+    name: "Meetup",
+    url: "https://www.meetup.com/biere-code-beer-paris/",
+    icon: "simple-icons:meetup"
+  }
+];
+---
+
+<footer class="w-full py-8">
+  <div class="max-w-4xl mx-auto px-4 flex justify-center items-center">
+    <div class="flex space-x-6">
+      {links.map((link) => (
+        <a 
+          href={link.url} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          class="text-gray-400 hover:text-yellow-600 transition-colors duration-300"
+          aria-label={`Follow us on ${link.name}`}
+        >
+          <Icon name={link.icon} class="w-5 h-5" />
+        </a>
+      ))}
+    </div>
+  </div>
+</footer>
+
