@@ -14,11 +14,16 @@
     "@astrojs/solid-js": "^5.0.8",
     "@tailwindcss/vite": "^4.1.4",
     "astro": "^5.7.4",
+    "astro-icon": "^1.1.5",
+    "rehype-external-links": "^3.0.0",
     "solid-js": "^1.9.5",
     "tailwindcss": "^4.1.4"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250922.0",
-    "@playwright/test": "^1.48.2"
+    "@iconify-json/lucide": "^1.2.81",
+    "@iconify-json/simple-icons": "^1.2.63",
+    "@playwright/test": "^1.48.2",
+    "@tailwindcss/typography": "^0.5.19"
   }
 }
