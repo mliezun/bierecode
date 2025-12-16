@@ -2,6 +2,7 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 import { Icon } from 'astro-icon/components';
 import Layout from '../../layouts/main-layout.astro';
+import Footer from '../../components/Footer.astro';
 
 export async function getStaticPaths() {
   const updates = await getCollection('updates');
@@ -96,4 +97,5 @@ function formatDate(date: Date): string {
       </article>
     </div>
   </section>
+  <Footer/>
 </Layout>

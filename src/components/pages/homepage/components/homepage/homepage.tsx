@@ -27,7 +27,7 @@ function detectLocale(): 'fr' | 'en' {
 
 const translations: Record<'fr' | 'en', Translation> = { fr, en };
 
-export function Homepage(): JSX.Element {
+export function Homepage(props: { children?: JSX.Element }): JSX.Element {
   const [lang, setLang] = createSignal<'fr' | 'en'>('fr');
   const translation = () => translations[lang()] ?? translations['fr'];
 
@@ -72,6 +72,7 @@ export function Homepage(): JSX.Element {
           {translation().updatesLink}
         </a>
       </div>
+      {props.children}
     </div>
   );
 }
